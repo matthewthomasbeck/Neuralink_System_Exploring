@@ -32,8 +32,6 @@ import numpy as np
 
 from utilities.log import initialize_logging
 import utilities.config as config
-from utilities.receiver import interpret_commands
-import utilities.internet as internet  # dynamically import internet utilities to be constantly updated
 
 ##### (pre)initialize all utilities #####
 
@@ -54,14 +52,11 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
 
     ##### import necessary functions #####
 
-    from utilities.receiver import initialize_receiver  # import receiver initialization functions
     from utilities.camera import initialize_camera  # import to start camera logic
-    import utilities.internet as internet  # dynamically import internet utilities to be constantly updated
-    from utilities.accelerometer import initialize_accelerometer  # import accelerometer initialization functions
 
     ##### initialize global variables #####
 
-    global CAMERA_PROCESS, CHANNEL_DATA, SOCK, COMMAND_QUEUE, ROBOT_ID, JOINT_MAP, internet
+    global CAMERA_PROCESS, CHANNEL_DATA, SOCK, COMMAND_QUEUE, ROBOT_ID, JOINT_MAP
 
     ##### initialize PREVIOUS_POSITIONS for physical robot (1 robot) #####
 
@@ -72,32 +67,11 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
     config.PREVIOUS_POSITIONS.append(robot_history)
     logging.debug("PREVIOUS_POSITIONS initialized for physical robot with zeros")
 
-    ##### initialize accelerometer #####
-
-    initialize_accelerometer()
-
     ##### initialize camera process #####
 
     CAMERA_PROCESS = initialize_camera()  # create camera process
     if CAMERA_PROCESS is None:
         logging.error("(control_logic.py): Failed to initialize CAMERA_PROCESS for robot!\n")
-
-    ##### initialize socket and command queue #####
-
-    if config.CONTROL_MODE == 'web':  # if web control mode and robot needs a socket connection for controls and video...
-        SOCK = internet.initialize_backend_socket()  # initialize EC2 socket connection
-        COMMAND_QUEUE = internet.initialize_command_queue(SOCK)  # initialize command queue for socket communication
-        if SOCK is None:
-            logging.error("(control_logic.py): Failed to initialize SOCK for robot!\n")
-        if COMMAND_QUEUE is None:
-            logging.error("(control_logic.py): Failed to initialize COMMAND_QUEUE for robot!\n")
-
-    ##### initialize channel data #####
-
-    elif config.CONTROL_MODE == 'radio':  # if radio control mode...
-        CHANNEL_DATA = initialize_receiver()  # get pigpio instance, decoders, and channel data
-        if CHANNEL_DATA == None:
-            logging.error("(control_logic.py): Failed to initialize CHANNEL_DATA for robot!\n")
 
     ##### initialize PREVIOUS_ORIENTATIONS for physical robot (1 robot) #####
 
@@ -107,6 +81,7 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
         orientation_history.append(np.zeros(6, dtype=np.float32))  # 6 values: shift, move, translate, yaw, roll, pitch
     config.PREVIOUS_ORIENTATIONS.append(orientation_history)
     logging.debug("PREVIOUS_ORIENTATIONS initialized for physical robot with zeros")
+    logging.info("(control_logic.py): Skipping accelerometer, EC2 socket, and RC receiver (CONTROL_MODE=%s).\n", config.CONTROL_MODE)
 
 
 ########## PREPARE ROBOT ##########
@@ -170,22 +145,7 @@ def _physical_loop(CHANNEL_DATA):  # central function that runs robot in real li
             )
             command = None  # initially no command
 
-            if config.CONTROL_MODE == 'web':  # if web control enabled...
-                internet.stream_to_backend(SOCK, streamed_frame)
-
-                if COMMAND_QUEUE is not None and not COMMAND_QUEUE.empty():  # if command queue is not empty...
-                    command = COMMAND_QUEUE.get()  # get command from queue
-                    if command is not None:
-                        if IS_COMPLETE:  # if movement is complete, run command
-                            logging.info(f"(control_logic.py): Received command '{command}' from queue (WILL RUN).\n")
-                        else:
-                            logging.info(f"(control_logic.py): Received command '{command}' from queue (BLOCKED).\n")
-
-            if config.CONTROL_MODE == 'radio':
-                commands = interpret_commands(CHANNEL_DATA)
-                if IS_COMPLETE:  # if movement is complete, process radio commands
-                    logging.debug(f"(control_logic.py): Processing radio commands: {commands}\n")
-                    threading.Thread(target=_handle_command, args=(commands, inference_frame), daemon=True).start()
+            # web (EC2) and radio (RC receiver) control paths intentionally disabled
 
             if command and IS_COMPLETE:  # if command present and movement complete...
                 # logging.debug(f"(control_logic.py): Running command: {command}...\n")
@@ -258,6 +218,17 @@ def _handle_command(command, camera_frames=None):
         except Exception as e:
             logging.error(f"(control_logic.py): Failed to execute keyboard command: {e}\n")
             IS_NEUTRAL = False
+            IS_COMPLETE = True
+
+    else:
+        # CONTROL_MODE is none (or unknown) — hold neutral, no remote inputs
+        try:
+            if not keys or 'n' in keys:
+                neutral_position(10)
+                IS_NEUTRAL = True
+            IS_COMPLETE = True
+        except Exception as e:
+            logging.error(f"(control_logic.py): Failed to hold neutral with CONTROL_MODE={config.CONTROL_MODE}: {e}\n")
             IS_COMPLETE = True
 
 
