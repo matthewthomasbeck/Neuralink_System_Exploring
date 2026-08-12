@@ -43,7 +43,7 @@ DEFAULT_INTENSITY = 10 # default intensity for keyboard commands (1 to 10)
 ##### set logging configuration #####
 
 LOG_CONFIG = {
-    'LOG_PATH': "/home/matthewthomasbeck/Projects/Robot_Dog/robot_dog.log", # path to log file DO NOT CHANGE
+    'LOG_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/neuralink_system_exploring.log", # path to log file DO NOT CHANGE
     'LOG_LEVEL': logging.INFO # set log level to logging.<DEBUG, INFO, WARNING, ERROR, or CRITICAL>
 }
 
@@ -75,9 +75,9 @@ CAMERA_CONFIG = { # TODO BE VERY CAREFUL WITH OUTPUT WIDTHxHEIGHT! Remember, the
 
 INFERENCE_CONFIG = {
     'TPU_NAME': "MYRIAD",  # literal device name in code
-    'STANDARD_RL_PATH': "/home/matthewthomasbeck/Projects/Robot_Dog/model/standard", # standard all terrain RL model
-    'BLIND_RL_PATH': "/home/matthewthomasbeck/Projects/Robot_Dog/model/blind_rl_model.xml", # speedy imageless RL model
-    'CNN_PATH': "/home/matthewthomasbeck/Projects/Robot_Dog/model/person-detection-0200.xml",  # person detection
+    'STANDARD_RL_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/standard", # standard all terrain RL model
+    'BLIND_RL_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/blind_rl_model.xml", # speedy imageless RL model
+    'CNN_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/person-detection-0200.xml",  # person detection
 }
 
 
