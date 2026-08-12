@@ -19,7 +19,6 @@
 
 ##### import necessary libraries #####
 
-import time # import time library for gait timing
 import logging # import logging library for debugging
 
 
@@ -35,10 +34,7 @@ import logging # import logging library for debugging
 
 ##### set global fps to be used by all modules #####
 
-LOOP_RATE_HZ = 30 # global loop rate in Hz for all modules TODO DEPRECATED/LEGACY
-CONTROL_MODE = 'none' # current control mode of the robot (web, radio, or none)
 RL_NOT_CNN = True # boolean to switch between testing and RL models (true is RL, false is testing)
-DEFAULT_INTENSITY = 10 # default intensity for keyboard commands (1 to 10)
 
 ##### set logging configuration #####
 
@@ -81,46 +77,12 @@ INFERENCE_CONFIG = {
 }
 
 
-########## ROBOT CONTROL CONFIGURATIONS (internet and radio) ##########
-
-##### declare movement channel GPIO pins #####
-
-SIGNAL_TUNING_CONFIG = { # dictionary of signal tuning configuration for sensitivity
-    'JOYSTICK_THRESHOLD': 40, # number of times condition must be met to trigger a request on a joystick channel
-    'TOGGLE_THRESHOLD': 40, # number of times condition must be met to trigger a request on a button channel
-    'TIME_FRAME': 0.10017, # time frame for condition to be met, default: 0.100158
-    'DEADBAND_HIGH': 1600, # deadband high for PWM signal
-    'DEADBAND_LOW': 1400 # deadband low for PWM signal
-}
-
-##### set receiver channels #####
-
-RECEIVER_CHANNELS = { # dictionary of receiver channels' names, GPIO pins, and states
-    'channel_0': {'name': 'tilt_up_down', 'gpio_pin': 17, 'counter': 0, 'timestamp': time.time()},
-    'channel_1': {'name': 'trigger_shoot', 'gpio_pin': 27, 'counter': 0, 'timestamp': time.time()},
-    'channel_2': {'name': 'squat_up_down', 'gpio_pin': 22, 'counter': 0, 'timestamp': time.time()},
-    'channel_3': {'name': 'rotate_left_right', 'gpio_pin': 5, 'counter': 0, 'timestamp': time.time()},
-    'channel_4': {'name': 'look_up_down', 'gpio_pin': 6, 'counter': 0, 'timestamp': time.time()},
-    'channel_5': {'name': 'move_forward_backward', 'gpio_pin': 13, 'counter': 0, 'timestamp': time.time()},
-    'channel_6': {'name': 'shift_left_right', 'gpio_pin': 19, 'counter': 0, 'timestamp': time.time()},
-    'channel_7': {'name': 'extra_channel', 'gpio_pin': 26, 'counter': 0, 'timestamp': time.time()},
-}
-
-##### set receiver configuration #####
+########## MAESTRO CONFIGURATION ##########
 
 MAESTRO_CONFIG = {
     'SERIAL_PATH': "/dev/serial0", # set serial port name to first available
     'SERIAL_BAUD_RATE': 9600, # set baud rate for serial connection
     'SERIAL_TIMEOUT': 1 # set timeout for serial connection
-}
-
-##### set internet connectivity configuration #####
-
-INTERNET_CONFIG = {
-    'BACKEND_API_URL': "https://api.matthewthomasbeck.com", # URL of the backend API endpoint
-    'BACKEND_PUBLIC_IP': "72.177.232.19", # public IP address of backend
-    'BACKEND_PORT': 3000, # port number for backend (fixed typo from 'BACKED_PORT')
-    'SSH_SOCKET_PATH': "/tmp/robot.sock" # path to unix socket for SSH communication
 }
 
 
@@ -154,21 +116,3 @@ PREVIOUS_POSITIONS = [] # array of previous positions for each robot
 ##### previous orientations #####
 
 PREVIOUS_ORIENTATIONS = [] # array of previous orientations for each robot (shift, move, translate, yaw, roll, pitch)
-
-##### set accelerometer configuration #####
-
-ACCELEROMETER_CONFIG = { # dictionary of accelerometer configuration
-
-    'MPU_6050_ADDRESS': 0x68, # address of the accelerometer
-    'PWR_MGMT_1': 0x6B, # power management register
-    'SMPLRT_DIV': 0x19, # sample rate divider
-    'CONFIG_REGISTER': 0x1A, # configuration register
-    'GYRO_CONFIG': 0x1B, # gyro configuration register
-    'INT_ENABLE': 0x38, # interrupt enable register
-    'ACCEL_XOUT_H': 0x3B, # accelerometer x-axis output high register
-    'ACCEL_YOUT_H': 0x3D, # accelerometer y-axis output high register
-    'ACCEL_ZOUT_H': 0x3F, # accelerometer z-axis output high register
-    'GYRO_XOUT_H': 0x43, # gyroscope x-axis output high register
-    'GYRO_YOUT_H': 0x45, # gyroscope y-axis output high register
-    'GYRO_ZOUT_H': 0x47 # gyroscope z-axis output high register
-}

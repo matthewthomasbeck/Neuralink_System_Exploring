@@ -33,7 +33,6 @@ import logging # import logging for error handling
 from movement.physical_joints import swing_leg, neutral_position_physical
 from utilities.inference import load_and_compile_model, run_gait_adjustment_standard, run_gait_adjustment_blind, \
     run_person_detection # load function/models for gait adjustment and person detection
-from utilities.accelerometer import get_all_data # import function to get all accelerometer data
 
 if config.RL_NOT_CNN:
     # TODO Be aware that multiple models loaded on one NCS2 may be an issue... might be worth benching one of these
@@ -93,10 +92,9 @@ def move_direction(commands, camera_frames, intensity, imageless_gait): # functi
     else: # if old format...
         commands = sorted(commands.split('+')) # alphabetize commands so they are uniform
 
-    ##### collect orientation data #####
+    ##### orientation vector (zeros — no accelerometer) #####
 
-    shift, move, translate, yaw, roll, pitch = get_all_data() # get all orientation data
-    orientation = [shift, move, translate, yaw, roll, pitch] # store orientation data in list
+    orientation = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     ##### run inference before moving #####
 
