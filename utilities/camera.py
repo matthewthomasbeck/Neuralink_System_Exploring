@@ -26,7 +26,6 @@ import utilities.config as config
 import subprocess # import subprocess to run rpicam command
 import logging # import logging for logging messages
 import time # add time for waiting
-import threading
 import numpy # add numpy for decoding frames
 import cv2  # add cv2 for decoding frames
 
@@ -39,98 +38,37 @@ import cv2  # add cv2 for decoding frames
 ################################################
 
 
-########## USB LATEST-FRAME GRABBER ##########
+########## INITIALIZE CAMERA ##########
 
-class LogiGrabber:
-
-    def __init__(self, device, width, height, frame_rate):
-        self.device = device
-        self.lock = threading.Lock()
-        self.frame = None
-        self.running = True
-        self.cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
-        if not self.cap.isOpened():
-            raise RuntimeError(f"Failed to open {device}")
-
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
-        self.cap.set(cv2.CAP_PROP_FPS, frame_rate)
-        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-        self.thread = threading.Thread(target=self._loop, daemon=True)
-        self.thread.start()
-
-    def _loop(self):
-        while self.running:
-            ok, frame = self.cap.read()
-            if not ok:
-                time.sleep(0.05)
-                continue
-            with self.lock:
-                self.frame = frame
-
-    def get_frame(self):
-        with self.lock:
-            if self.frame is None:
-                return None
-            return self.frame.copy()
-
-    def stop(self):
-        self.running = False
-        if self.cap is not None:
-            self.cap.release()
-
-
-########## INITIALIZE CAMERAS ##########
-
-def initialize_camera( # starts PiCam CSI + C270 USB
+def initialize_camera(
         robot_id=0,
         width=config.CAMERA_CONFIG['WIDTH'],
         height=config.CAMERA_CONFIG['HEIGHT'],
         frame_rate=config.CAMERA_CONFIG['FRAME_RATE']
 ):
 
-    logging.debug("(camera.py): Initializing cameras...\n")
+    logging.debug("(camera.py): Initializing camera...\n")
     _kill_existing_camera_processes()
+    camera_process = _start_camera_process(robot_id, width, height, frame_rate)
 
-    picam = _start_camera_process(robot_id, width, height, frame_rate)
-    if picam is None:
-        logging.error("(camera.py): PiCam initialization failed.\n")
-
-    logi = None
-    try:
-        logi = LogiGrabber(
-            config.CAMERA_CONFIG['LOGI_DEVICE'],
-            config.CAMERA_CONFIG['LOGI_WIDTH'],
-            config.CAMERA_CONFIG['LOGI_HEIGHT'],
-            config.CAMERA_CONFIG['LOGI_FRAME_RATE']
-        )
-        logging.info(f"(camera.py): C270 opened on {config.CAMERA_CONFIG['LOGI_DEVICE']}.\n")
-    except Exception as e:
-        logging.error(f"(camera.py): Failed to open C270: {e}\n")
-
-    if picam is None and logi is None:
+    if camera_process is None:
+        logging.error("(camera.py): Camera initialization failed, no camera process started.\n")
         return None
 
-    return {
-        'picam': picam,
-        'picam_buffer': b'',
-        'logi': logi,
-    }
+    return camera_process
 
 
 ########## TERMINATE EXISTING CAMERA PIPELINES ##########
 
-def _kill_existing_camera_processes(): # function to kill existing camera processes if they exist
+def _kill_existing_camera_processes():
 
     try:
         logging.debug("(camera.py): Checking for existing camera processes...\n")
-        subprocess.run(["pkill", "-9", "-f", "rpicam-vid"]) # use pkill for each process type
+        subprocess.run(["pkill", "-9", "-f", "rpicam-vid"])
         subprocess.run(["pkill", "-9", "-f", "rpicam-jpeg"])
         subprocess.run(["pkill", "-9", "-f", "libcamera"])
         logging.info("(camera.py): Successfully killed existing camera processes.\n")
-        time.sleep(0.5)  # give time for processes to exit
+        time.sleep(0.5)
 
     except Exception as e:
         logging.error(f"(camera.py): Failed to terminate existing camera processes: {e}\n")
@@ -138,10 +76,10 @@ def _kill_existing_camera_processes(): # function to kill existing camera proces
 
 ########## CREATE CAMERA PIPELINE ##########
 
-def _start_camera_process(robot_id, width, height, frame_rate): # function to start camera process for opencv
+def _start_camera_process(robot_id, width, height, frame_rate):
 
     try:
-        real_camera = subprocess.Popen(  # open an rpicam vid process
+        real_camera = subprocess.Popen(
             [
                 "rpicam-vid",
                 "--width", str(width),
@@ -169,7 +107,7 @@ def _start_camera_process(robot_id, width, height, frame_rate): # function to st
         return None
 
 
-########## DECODE PICAM FRAME ##########
+########## DECODE FRAME ##########
 
 def decode_real_frame(camera_process, mjpeg_buffer):
 
@@ -188,32 +126,10 @@ def decode_real_frame(camera_process, mjpeg_buffer):
             inference_frame = cv2.imdecode(numpy.frombuffer(streamed_frame, dtype=numpy.uint8), cv2.IMREAD_COLOR)
             return mjpeg_buffer, streamed_frame, inference_frame
 
-        if len(mjpeg_buffer) > 65536: # if buffer overflow...
-            mjpeg_buffer = b'' # reset buffer to avoid overflow
+        if len(mjpeg_buffer) > 65536:
+            mjpeg_buffer = b''
         return mjpeg_buffer, None, None
 
     except Exception as e:
         logging.error(f"(camera.py): Failed to decode frame: {e}\n")
         return mjpeg_buffer, None, None
-
-
-########## GET LATEST FRAMES FROM BOTH CAMERAS ##########
-
-def get_latest_frames(cameras):
-
-    picam_frame = None
-    logi_frame = None
-
-    if cameras is None:
-        return None, None
-
-    if cameras.get('picam') is not None:
-        cameras['picam_buffer'], _, picam_frame = decode_real_frame(
-            cameras['picam'],
-            cameras['picam_buffer']
-        )
-
-    if cameras.get('logi') is not None:
-        logi_frame = cameras['logi'].get_frame()
-
-    return picam_frame, logi_frame

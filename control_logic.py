@@ -61,11 +61,11 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
         robot_history.append(np.zeros(12, dtype=np.float32))
     config.PREVIOUS_POSITIONS.append(robot_history)
 
-    ##### initialize cameras (PiCam CSI + C270 USB) #####
+    ##### initialize camera process #####
 
-    CAMERA_PROCESS = initialize_camera()
+    CAMERA_PROCESS = initialize_camera()  # create camera process
     if CAMERA_PROCESS is None:
-        logging.error("(control_logic.py): Failed to initialize cameras!\n")
+        logging.error("(control_logic.py): Failed to initialize CAMERA_PROCESS for robot!\n")
 
     ##### initialize PREVIOUS_ORIENTATIONS for physical robot (1 robot) #####
 
@@ -85,7 +85,7 @@ set_real_robot_dependencies()
 ##### post-initialization dependencies #####
 
 from movement.movement_coordinator import *
-from utilities.camera import get_latest_frames
+from utilities.camera import decode_real_frame
 
 
 
@@ -113,6 +113,7 @@ def _physical_loop():  # central function that runs robot in real life
     ##### set/initialize variables #####
 
     global IS_COMPLETE, IS_NEUTRAL, CURRENT_LEG  # declare as global as these will be edited by function
+    mjpeg_buffer = b''  # initialize buffer for MJPEG frames
 
     ##### run robotic logic #####
 
@@ -128,17 +129,12 @@ def _physical_loop():  # central function that runs robot in real life
 
     try:  # try to run main robotic process
 
-        last_status = 0.0
         while True:  # central loop to entire process, commenting out of importance
 
-            picam_frame, logi_frame = get_latest_frames(CAMERA_PROCESS)
-
-            now = time.time()
-            if now - last_status >= 5.0:
-                picam_ok = picam_frame is not None
-                logi_ok = logi_frame is not None
-                logging.info(f"(control_logic.py): frames picam={picam_ok} c270={logi_ok}\n")
-                last_status = now
+            mjpeg_buffer, streamed_frame, inference_frame = decode_real_frame(
+                CAMERA_PROCESS,
+                mjpeg_buffer
+            )
 
     except KeyboardInterrupt:  # if user ends program...
         logging.info("(control_logic.py): KeyboardInterrupt received, exiting.\n")
