@@ -23,14 +23,14 @@ import utilities.config as config # import configuration data for servos and lin
 
 ##### import necessary libraries #####
 
-import time # import time for proper leg sequencing
+import time # import time for proper sequencing
 import threading # import threading for thread management
 import random # import random for random angle radians
 import logging # import logging for error handling
 
 ##### import necessary functions #####
 
-from movement.physical_joints import swing_leg, neutral_position_physical
+from utilities.servos import move_joint, go_to_neutral
 from utilities.inference import load_and_compile_model, run_gait_adjustment_standard, run_gait_adjustment_blind, \
     run_person_detection # load function/models for gait adjustment and person detection
 
@@ -83,11 +83,6 @@ def move_direction(commands, camera_frames, intensity, imageless_gait): # functi
             tilt_command = commands[3]
 
         commands = rl_commands
-        
-        # Log the command processing
-        #logging.debug(f"(movement_coordinator.py): Processed fixed-length list: {rl_commands}")
-        #if tilt_command:
-            #logging.debug(f"(movement_coordinator.py): Tilt command detected: {tilt_command} (not passed to RL model)")
 
     else: # if old format...
         commands = sorted(commands.split('+')) # alphabetize commands so they are uniform
@@ -118,15 +113,6 @@ def move_direction(commands, camera_frames, intensity, imageless_gait): # functi
                     intensity,
                     orientation
                 )
-                #target_angles, movement_rates = run_gait_adjustment_standard( # run standard
-                    #STANDARD_RL_MODEL,
-                    #STANDARD_INPUT_LAYER,
-                    #STANDARD_OUTPUT_LAYER,
-                    #commands,
-                    #camera_frames[0]['inference_frame'],
-                    #intensity,
-                    #orientation
-                #)
 
             else: # if using imageless gait adjustment...
                 target_angles, movement_rates = run_gait_adjustment_blind( # run blind
@@ -142,10 +128,9 @@ def move_direction(commands, camera_frames, intensity, imageless_gait): # functi
             logging.debug(f"(movement_coordinator.py): Target angles: {target_angles}\n")
             logging.debug(f"(movement_coordinator.py): Movement rates: {movement_rates}\n")
 
-            ##### move legs and update current position #####
+            ##### move joints and update current position #####
 
-            # move legs and update current angles
-            thread_leg_movement(
+            thread_joint_movement(
                 config.SERVO_CONFIG,
                 target_angles,
                 movement_rates
@@ -169,23 +154,26 @@ def move_direction(commands, camera_frames, intensity, imageless_gait): # functi
     time.sleep(0.0875) # only allow inference to run at rate # was 0.175
 
 
-########## THREAD LEG MOVEMENT ##########
+########## THREAD JOINT MOVEMENT ##########
 
-def thread_leg_movement(current_servo_config, target_angles, movement_rates): # function to separate leg movement
-    
-    leg_threads = []  # create a list to hold threads for each leg
-    for leg_id in ['FL', 'FR', 'BL', 'BR']:  # loop through each leg and create a thread to move
+def thread_joint_movement(current_servo_config, target_angles, movement_rates): # function to move upper + lower
+
+    joint_threads = []
+    for joint_name in ('upper', 'lower'):
+        if joint_name not in target_angles:
+            continue
+        speed = 1.0
+        if isinstance(movement_rates, dict):
+            speed = movement_rates.get(joint_name, 1.0)
+            if isinstance(speed, dict):
+                speed = speed.get('speed', 1.0)
         t = threading.Thread(
-            target=swing_leg,
-            args=(
-                leg_id,
-                target_angles[leg_id],
-                movement_rates[leg_id]
-            )
+            target=move_joint,
+            args=(joint_name, target_angles[joint_name], speed)
         )
-        leg_threads.append(t)
+        joint_threads.append(t)
         t.start()
-    for t in leg_threads:  # wait for all legs to finish
+    for t in joint_threads:
         t.join()
 
 
@@ -201,32 +189,18 @@ def get_random_action(state, commands, intensity): # used to generate random mov
 
     ##### generate random angles and rates #####
 
-    for leg_id in ['FL', 'FR', 'BL', 'BR']: # loop through each leg
+    for joint_name in ('upper', 'lower'):
 
-        target_angles[leg_id] = {}
-        mid_angles[leg_id] = {}
-        movement_rates[leg_id] = {'speed': 1.0, 'acceleration': 0.5}  # 1 rad/s, 0.5 rad/s²
-        
-        for joint_name in ['hip', 'upper', 'lower']: # loop through each joint
+        servo_data = config.SERVO_CONFIG[joint_name]
+        full_back_angle = servo_data['FULL_BACK_ANGLE']
+        full_front_angle = servo_data['FULL_FRONT_ANGLE']
+        min_angle = min(full_back_angle, full_front_angle)
+        max_angle = max(full_back_angle, full_front_angle)
 
-            ##### get valid range #####
+        target_angles[joint_name] = random.uniform(min_angle, max_angle)
+        mid_angles[joint_name] = random.uniform(min_angle, max_angle)
+        movement_rates[joint_name] = 1.0
 
-            servo_data = config.SERVO_CONFIG[leg_id][joint_name]
-            full_back_angle = servo_data['FULL_BACK_ANGLE']
-            full_front_angle = servo_data['FULL_FRONT_ANGLE']
-
-            ##### ensure correct order #####
-
-            min_angle = min(full_back_angle, full_front_angle)
-            max_angle = max(full_back_angle, full_front_angle)
-            
-            ##### generate random angles #####
-
-            target_angle = random.uniform(min_angle, max_angle)
-            mid_angle = random.uniform(min_angle, max_angle)
-            target_angles[leg_id][joint_name] = target_angle
-            mid_angles[leg_id][joint_name] = mid_angle
-    
     return target_angles, mid_angles, movement_rates
 
 
@@ -234,10 +208,7 @@ def get_random_action(state, commands, intensity): # used to generate random mov
 
 def neutral_position(intensity):
 
-    ##### move legs to neutral based on simulation mode #####
-
-    try: # try to move legs to neutral position
-        neutral_position_physical(intensity) # pass intensity
-    except Exception as e: # if failed to move legs to neutral position...
-        logging.error(f"(movement_coordinator.py): Failed to move legs to neutral position: {e}\n")
-  
+    try:
+        go_to_neutral()
+    except Exception as e:
+        logging.error(f"(movement_coordinator.py): Failed to move servos to neutral position: {e}\n")

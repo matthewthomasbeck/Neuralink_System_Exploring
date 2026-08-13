@@ -60,7 +60,6 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
     for _ in range(5):
         robot_history.append(np.zeros(12, dtype=np.float32))
     config.PREVIOUS_POSITIONS.append(robot_history)
-    logging.debug("PREVIOUS_POSITIONS initialized for physical robot with zeros")
 
     ##### initialize camera process #####
 
@@ -75,7 +74,6 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
     for _ in range(5):
         orientation_history.append(np.zeros(6, dtype=np.float32))  # 6 values: shift, move, translate, yaw, roll, pitch
     config.PREVIOUS_ORIENTATIONS.append(orientation_history)
-    logging.debug("PREVIOUS_ORIENTATIONS initialized for physical robot with zeros")
 
 
 ########## PREPARE ROBOT ##########

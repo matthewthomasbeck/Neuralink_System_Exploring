@@ -127,27 +127,7 @@ def decode_real_frame(camera_process, mjpeg_buffer):
             streamed_frame = mjpeg_buffer[start_idx:end_idx + 2]
             mjpeg_buffer = mjpeg_buffer[end_idx + 2:]
             inference_frame = cv2.imdecode(numpy.frombuffer(streamed_frame, dtype=numpy.uint8), cv2.IMREAD_COLOR)
-
-            if config.RL_NOT_CNN:  # if running RL model for movement...
-
-                ##### crop #####
-
-                h = inference_frame.shape[0]
-                crop_start = int(h * (1 - config.CAMERA_CONFIG['CROP_FRACTION']))
-                cropped = inference_frame[crop_start:, :, :]
-
-                ##### grayscale #####
-
-                gray_frame = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
-
-                ##### resize #####
-
-                output_size = (config.CAMERA_CONFIG['OUTPUT_WIDTH'], config.CAMERA_CONFIG['OUTPUT_HEIGHT'])
-                resized_frame = cv2.resize(gray_frame, output_size)
-                return mjpeg_buffer, streamed_frame, resized_frame
-
-            else: # cnn or other use
-                return mjpeg_buffer, streamed_frame, inference_frame
+            return mjpeg_buffer, streamed_frame, inference_frame
 
         if len(mjpeg_buffer) > 65536: # if buffer overflow...
             mjpeg_buffer = b'' # reset buffer to avoid overflow

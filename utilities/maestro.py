@@ -122,7 +122,7 @@ def _disable_all_servos(maestro): # function to disable all servos at startup
 
     try:
 
-        for channel in range(12): # iterate through all servo channels (0-11)
+        for channel in range(2): # only upper (0) and lower (1)
             maestro.write(bytearray([0x84, channel, 0, 0])) # send command to set target position to 0 (disabled)
 
         logging.info("(maestro.py): Disabled all servos at startup.\n")

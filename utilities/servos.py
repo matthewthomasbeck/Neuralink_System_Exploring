@@ -24,6 +24,10 @@ import logging # import logging for debugging
 ##### import necessary functions #####
 
 from utilities.maestro import initialize_maestro # import maestro initialization functions
+import utilities.config as config
+
+
+
 
 
 ########## CREATE DEPENDENCIES ##########
@@ -95,10 +99,10 @@ def map_angle_to_servo_position(angle, joint_data): # map radian to pwm
 
     else: # if back value scalar greater than front value scalar...
         pwm = max(full_front_pwm, min(full_back_pwm, pwm)) # clamp pwm to valid range
-    
+
     logging.debug(f"(servos.py): Angle {angle:.3f} rad -> PWM {pwm:.1f} (range: {full_back_pwm} to {full_front_pwm})\n")
     logging.debug(f"(servos.py): Angle range: {full_back_angle:.3f} to {full_front_angle:.3f} rad\n")
-    
+
     return int(round(pwm)) # return calculated pulse width
 
 
@@ -106,7 +110,7 @@ def map_angle_to_servo_position(angle, joint_data): # map radian to pwm
 
 def map_radian_to_servo_speed(radian_speed): # function to map radian speed to servo speed
 
-    ##### mao radian speed to servo speed #####
+    ##### map radian speed to servo speed #####
 
     logging.debug(f"(servos.py): Mapping radian speed {radian_speed} to servo speed...\n")
 
@@ -114,7 +118,31 @@ def map_radian_to_servo_speed(radian_speed): # function to map radian speed to s
     servo_speed = (radian_speed / 9.52) * 16383 # map radian speed to servo speed (0 to 16383)
     servo_speed = int(round(servo_speed)) # round servo speed to nearest integer
     servo_speed = max(0, min(16383, servo_speed)) # ensure servo speed is within valid range
-    
+
     logging.debug(f"(servos.py): Radian speed {radian_speed:.3f} rad/s -> Servo speed {servo_speed}\n")
-    
+
     return servo_speed
+
+
+########## MOVE NAMED JOINT ##########
+
+def move_joint(joint_name, target_angle, speed=9.5):
+
+    servo_data = config.SERVO_CONFIG[joint_name]
+    pwm = map_angle_to_servo_position(target_angle, servo_data)
+    servo_speed = map_radian_to_servo_speed(speed)
+    set_target(servo_data['servo'], pwm, servo_speed, 255)
+    config.SERVO_CONFIG[joint_name]['CURRENT'] = pwm
+    config.SERVO_CONFIG[joint_name]['CURRENT_ANGLE'] = target_angle
+
+
+########## NEUTRAL POSITION ##########
+
+def go_to_neutral(speed=9.5):
+
+    logging.info("(servos.py): Moving upper + lower servos to neutral...\n")
+    for joint_name in ('upper', 'lower'):
+        try:
+            move_joint(joint_name, config.SERVO_CONFIG[joint_name]['NEUTRAL_ANGLE'], speed)
+        except Exception as e:
+            logging.error(f"(servos.py): Failed to move {joint_name} to neutral: {e}\n")

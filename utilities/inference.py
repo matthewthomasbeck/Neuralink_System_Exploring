@@ -25,6 +25,7 @@ import utilities.config as config
 
 import numpy as np # import NumPy for array manipulation
 import logging # import logging for logging messages
+from collections import deque
 
 ##### get physical robot dependencies #####
 
