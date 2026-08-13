@@ -346,6 +346,8 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
     try:
         if not run_inference:
             logging.debug("(inference.py): Not running inference, passing...\n")
+            #cv2.imshow("video (standard)", frame)
+            #cv2.waitKey(1)
             return False, 0, 0, 0
 
         if compiled_model is not None and input_layer is not None and output_layer is not None:
@@ -404,6 +406,8 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
                 f"largest_box_area={largest_box_area}px², "
                 f"target_cx={target_cx}px.\n"
             )
+            #cv2.imshow("video (inference)", frame)
+            #cv2.waitKey(1)
 
         else:
             logging.warning("(inference.py): Inference requested but model is not loaded.\n")

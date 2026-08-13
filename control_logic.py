@@ -25,6 +25,7 @@ import os
 import logging
 from collections import deque
 import numpy as np
+import cv2
 
 ##### mandatory dependencies #####
 
@@ -159,6 +160,14 @@ def _physical_loop():  # central function that runs robot in real life
                 inference_frame,
                 run_inference=True
             )
+
+            if config.INFERENCE_CONFIG.get('SHOW_SCREEN', False) and inference_frame is not None:
+                try:
+                    cv2.imshow("SSDLite detection", inference_frame)
+                    cv2.waitKey(1)
+                except Exception as e:
+                    logging.warning(f"(control_logic.py): cv2.imshow failed: {e}\n")
+                    config.INFERENCE_CONFIG['SHOW_SCREEN'] = False
 
             frame_width = inference_frame.shape[1] if inference_frame is not None else 0
             retract_if_too_close(person_detected, box_width, frame_width)

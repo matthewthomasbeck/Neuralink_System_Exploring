@@ -91,13 +91,12 @@ def _start_camera_process(robot_id, width, height, frame_rate):
                 "--nopreview"
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             bufsize=0
         )
         time.sleep(0.2)
         if real_camera.poll() is not None:
-            stderr = real_camera.stderr.read().decode()
-            logging.error(f"(camera.py): Camera process failed to start. Stderr: {stderr}\n")
+            logging.error("(camera.py): Camera process failed to start.\n")
             return None
         logging.info(f"(camera.py): PiCam initialized successfully with PID {real_camera.pid}.\n")
         return real_camera

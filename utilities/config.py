@@ -70,6 +70,7 @@ CAMERA_CONFIG = {
 INFERENCE_CONFIG = {
     'TPU_NAME': "MYRIAD",  # literal device name in code
     'CNN_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/person-detection-0200.xml",  # person detection
+    'SHOW_SCREEN': True,  # cv2.imshow preview for RustDesk / local debugging
 }
 
 PERSON_PROXIMITY_CONFIG = {

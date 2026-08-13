@@ -22,6 +22,8 @@ ExecStart=/home/matthewthomasbeck/.virtualenvs/openvino/bin/python /home/matthew
 Environment=VIRTUAL_ENV=/home/matthewthomasbeck/.virtualenvs/openvino
 Environment=PYTHONPATH=/opt/intel/openvino/python/python3.9:/opt/intel/openvino/python/python3
 Environment=LD_LIBRARY_PATH=/opt/intel/openvino/tools/compile_tool:/opt/intel/openvino/runtime/3rdparty/hddl/lib:/opt/intel/openvino/runtime/lib/aarch64
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/matthewthomasbeck/.Xauthority
 
 Restart=on-failure
 RestartSec=5
