@@ -74,7 +74,8 @@ INFERENCE_CONFIG = {
 }
 
 PERSON_PROXIMITY_CONFIG = {
-    'WIDTH_RATIO_THRESHOLD': 0.90,  # retract when bbox width exceeds this fraction of frame width
+    'WIDTH_RATIO_THRESHOLD': 0.55,  # retract when bbox width exceeds this fraction of frame width
+    'EXTEND_STEP_RAD': 0.05,        # radians to reach toward a person who is in view but not too close
     'RETRACT_STEP_RAD': 0.05,       # radians to move each joint per frame while too close
 }
 
@@ -90,11 +91,11 @@ MAESTRO_CONFIG = {
 
 ########## PHYSICAL CONFIGURATION ##########
 
-##### 2-DOF arm: servo 0 = upper, servo 1 = lower (270° hobby servos) #####
+##### 2-DOF arm: servo 11 = upper, servo 10 = lower (270° hobby servos) #####
 
 SERVO_CONFIG = {
     'upper': {
-        'servo': 0,
+        'servo': 11,
         'FULL_FRONT': 1921.50,
         'FULL_BACK': 1310.00,
         'NEUTRAL': 1615.75,
@@ -105,7 +106,7 @@ SERVO_CONFIG = {
         'NEUTRAL_ANGLE': 0.0,
     },
     'lower': {
-        'servo': 1,
+        'servo': 10,
         'FULL_FRONT': 2000.00,
         'FULL_BACK': 1231.75,
         'NEUTRAL': 1615.875,

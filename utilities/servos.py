@@ -55,6 +55,10 @@ def set_target(channel, target, speed, acceleration): # function to set target p
 
     try: # attempt to move desired servo
 
+        if MAESTRO is None or isinstance(MAESTRO, int):
+            logging.error("(servos.py): Maestro is not connected; cannot move servo.\n")
+            return
+
         target = int(round(target * 4)) # convert target from microseconds to quarter-microseconds
         speed = max(0, min(16383, speed)) # ensure speed is within valid range
         acceleration = max(0, min(255, acceleration)) # ensure acceleration is within valid range
@@ -66,9 +70,10 @@ def set_target(channel, target, speed, acceleration): # function to set target p
         MAESTRO.write(accel_command) # send acceleration command to maestro
         command = bytearray([0x84, channel, target & 0x7F, (target >> 7) & 0x7F]) # create target position command
         MAESTRO.write(command) # send target position command to maestro
+        MAESTRO.flush()
 
-    except:
-        logging.error("(servos.py): Failed to move servo.\n") # print failure statement
+    except Exception as e:
+        logging.error(f"(servos.py): Failed to move servo: {e}\n")
 
 
 ########## ANGLE TO TARGET ##########
