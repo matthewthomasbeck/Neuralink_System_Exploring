@@ -74,9 +74,8 @@ INFERENCE_CONFIG = {
 }
 
 PERSON_PROXIMITY_CONFIG = {
-    'WIDTH_RATIO_THRESHOLD': 0.90,  # retract when bbox width exceeds this fraction of frame width
-    'RETRACT_STEP_RAD': 0.05,       # radians to move each joint per frame while too close
-    'NEUTRAL_STEP_RAD': 0.05,       # radians to step back toward neutral when person is not too close
+    'RETRACT_STEP_RAD': 0.05,  # radians to retract each joint per frame while a person is detected
+    'NEUTRAL_STEP_RAD': 0.05,  # radians to step back toward neutral when no person is detected
 }
 
 

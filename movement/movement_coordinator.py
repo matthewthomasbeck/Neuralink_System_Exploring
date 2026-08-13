@@ -43,31 +43,19 @@ def neutral_position(intensity=1):
         logging.error(f"(movement_coordinator.py): Failed to move servos to neutral position: {e}\n")
 
 
-########## RETRACT IF PERSON IS TOO CLOSE ##########
+########## UPDATE ARM FROM PERSON DETECTION ##########
 
-def retract_if_too_close(person_detected, box_width, frame_width):
+def retract_if_too_close(person_detected, has_frame=True):
 
-    if frame_width <= 0:
+    if not has_frame:
         return
 
-    width_ratio = (box_width / float(frame_width)) if person_detected else 0.0
-    threshold = config.PERSON_PROXIMITY_CONFIG['WIDTH_RATIO_THRESHOLD']
-    too_close = person_detected and width_ratio >= threshold
-
-    if too_close:
-        _set_arm_action(
-            'retract',
-            f"(movement_coordinator.py): Person too close "
-            f"({width_ratio:.1%} of frame width) — retracting servos.\n"
-        )
+    if person_detected:
+        _set_arm_action('retract', "(movement_coordinator.py): Person detected — retracting servos.\n")
         _nudge_joints_toward('FULL_BACK_ANGLE', config.PERSON_PROXIMITY_CONFIG['RETRACT_STEP_RAD'])
         return
 
-    _set_arm_action(
-        'neutral',
-        f"(movement_coordinator.py): Person not occupying {threshold:.0%} of frame "
-        f"(width_ratio={width_ratio:.1%}) — returning servos to neutral.\n"
-    )
+    _set_arm_action('neutral', "(movement_coordinator.py): Person not detected — returning servos to neutral.\n")
     _nudge_joints_toward('NEUTRAL_ANGLE', config.PERSON_PROXIMITY_CONFIG['NEUTRAL_STEP_RAD'])
 
 

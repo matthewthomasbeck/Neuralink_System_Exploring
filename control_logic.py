@@ -153,7 +153,7 @@ def _physical_loop():  # central function that runs robot in real life
                 mjpeg_buffer
             )
 
-            person_detected, target_cx, largest_box_area, box_width = inference.run_person_detection(
+            person_detected, _, _, _ = inference.run_person_detection(
                 DETECTION_MODEL,
                 DETECTION_INPUT_LAYER,
                 DETECTION_OUTPUT_LAYER,
@@ -169,8 +169,7 @@ def _physical_loop():  # central function that runs robot in real life
                     logging.warning(f"(control_logic.py): cv2.imshow failed: {e}\n")
                     config.INFERENCE_CONFIG['SHOW_SCREEN'] = False
 
-            frame_width = inference_frame.shape[1] if inference_frame is not None else 0
-            retract_if_too_close(person_detected, box_width, frame_width)
+            retract_if_too_close(person_detected, has_frame=inference_frame is not None)
 
     except KeyboardInterrupt:  # if user ends program...
         logging.info("(control_logic.py): KeyboardInterrupt received, exiting.\n")
