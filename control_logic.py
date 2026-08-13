@@ -37,6 +37,9 @@ LOGGER = initialize_logging()
 CAMERA_PROCESS = None
 ROBOT_ID = None
 JOINT_MAP = {}
+DETECTION_MODEL = None
+DETECTION_INPUT_LAYER = None
+DETECTION_OUTPUT_LAYER = None
 
 
 ########## PREPARE ROBOT ##########
@@ -48,10 +51,12 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
     ##### import necessary functions #####
 
     from utilities.camera import initialize_camera  # import to start camera logic
+    from utilities import inference
 
     ##### initialize global variables #####
 
     global CAMERA_PROCESS, ROBOT_ID, JOINT_MAP
+    global DETECTION_MODEL, DETECTION_INPUT_LAYER, DETECTION_OUTPUT_LAYER
 
     ##### initialize PREVIOUS_POSITIONS for physical robot (1 robot) #####
 
@@ -66,6 +71,16 @@ def set_real_robot_dependencies():  # function to initialize real robot dependen
     CAMERA_PROCESS = initialize_camera()  # create camera process
     if CAMERA_PROCESS is None:
         logging.error("(control_logic.py): Failed to initialize CAMERA_PROCESS for robot!\n")
+
+    ##### initialize person detection model #####
+
+    model_path = config.INFERENCE_CONFIG['CNN_PATH']
+    if os.path.isfile(model_path):
+        DETECTION_MODEL, DETECTION_INPUT_LAYER, DETECTION_OUTPUT_LAYER = inference.load_and_compile_model(model_path)
+        if DETECTION_MODEL is None:
+            logging.warning("(control_logic.py): Person detection model failed to load.\n")
+    else:
+        logging.warning(f"(control_logic.py): Person detection model not found at {model_path}.\n")
 
     ##### initialize PREVIOUS_ORIENTATIONS for physical robot (1 robot) #####
 
@@ -86,6 +101,7 @@ set_real_robot_dependencies()
 
 from movement.movement_coordinator import *
 from utilities.camera import decode_real_frame
+from utilities import inference
 
 
 
@@ -135,6 +151,17 @@ def _physical_loop():  # central function that runs robot in real life
                 CAMERA_PROCESS,
                 mjpeg_buffer
             )
+
+            person_detected, target_cx, largest_box_area, box_width = inference.run_person_detection(
+                DETECTION_MODEL,
+                DETECTION_INPUT_LAYER,
+                DETECTION_OUTPUT_LAYER,
+                inference_frame,
+                run_inference=True
+            )
+
+            frame_width = inference_frame.shape[1] if inference_frame is not None else 0
+            retract_if_too_close(person_detected, box_width, frame_width)
 
     except KeyboardInterrupt:  # if user ends program...
         logging.info("(control_logic.py): KeyboardInterrupt received, exiting.\n")

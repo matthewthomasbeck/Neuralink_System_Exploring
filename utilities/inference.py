@@ -330,39 +330,61 @@ def run_gait_adjustment_blind( # function to run gait adjustment RL model withou
         return {}, {}
 
 
-########## RUN PERSON DETECTION CNN MODEL AND SHOW FRAME ##########
+########## RUN PERSON DETECTION CNN MODEL ##########
 
 def run_person_detection(compiled_model, input_layer, output_layer, frame, run_inference):
 
+    person_detected = False
+    target_cx = 0
+    largest_box_area = 0
+    largest_box_width = 0
+
     if frame is None:
-        logging.warning("(opencv.py): Frame is None.\n")
-        return
+        logging.debug("(inference.py): Frame is None.\n")
+        return False, 0, 0, 0
 
     try:
         if not run_inference:
-
-            logging.debug("(opencv.py): Not running inference, passing...\n")
-            #cv2.imshow("video (standard)", frame)
-            #cv2.waitKey(1)
-            return
+            logging.debug("(inference.py): Not running inference, passing...\n")
+            return False, 0, 0, 0
 
         if compiled_model is not None and input_layer is not None and output_layer is not None:
 
-            logging.debug("(opencv.py): Running inference...\n")
+            logging.debug("(inference.py): Running inference...\n")
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             input_blob = cv2.resize(frame_rgb, (256, 256)).transpose(2, 0, 1)
             input_blob = np.expand_dims(input_blob, axis=0).astype(np.float32)
             results = compiled_model([input_blob])[output_layer]
 
+            largest_box_area = 0
+            largest_box_width = 0
+            target_cx = 0
+
             for detection in results[0][0]:
                 confidence = detection[2]
                 if confidence > 0.5:
+                    person_detected = True
                     xmin, ymin, xmax, ymax = map(
                         int, detection[3:7] * [
                             frame.shape[1], frame.shape[0],
                             frame.shape[1], frame.shape[0]
                         ]
                     )
+
+                    box_width = max(0, xmax - xmin)
+                    box_area = box_width * max(0, ymax - ymin)
+
+                    if box_area > largest_box_area:
+                        largest_box_area = box_area
+                        largest_box_width = box_width
+                        target_cx = (xmin + xmax) // 2
+                        logging.debug(
+                            f"(inference.py): New largest box — "
+                            f"area={box_area}px², width={box_width}px, center_x={target_cx}px, "
+                            f"confidence={confidence:.2f}, "
+                            f"bbox=({xmin},{ymin},{xmax},{ymax}).\n"
+                        )
+
                     label = f"ID {int(detection[1])}: {confidence:.2f}"
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (0, 255, 0), 2)
                     cv2.putText(
@@ -375,12 +397,19 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
                         2
                     )
 
-            logging.info("(opencv.py): Inference complete.\n")
-            #cv2.imshow("video (inference)", frame)
-            #cv2.waitKey(1)
-            
+            logging.debug(
+                f"(inference.py): Frame result — "
+                f"person_detected={person_detected}, "
+                f"largest_box_width={largest_box_width}px, "
+                f"largest_box_area={largest_box_area}px², "
+                f"target_cx={target_cx}px.\n"
+            )
+
         else:
-            logging.warning("(opencv.py): Inference requested but model is not loaded.\n")
+            logging.warning("(inference.py): Inference requested but model is not loaded.\n")
+
+        return person_detected, target_cx, largest_box_area, largest_box_width
 
     except Exception as e:
-        logging.error(f"(opencv.py): Inference error: {e}\n")
+        logging.error(f"(inference.py): Inference error: {e}\n")
+        return False, 0, 0, 0

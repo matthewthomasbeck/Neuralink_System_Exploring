@@ -69,9 +69,12 @@ CAMERA_CONFIG = {
 
 INFERENCE_CONFIG = {
     'TPU_NAME': "MYRIAD",  # literal device name in code
-    'STANDARD_RL_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/standard", # standard all terrain RL model
-    'BLIND_RL_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/blind_rl_model.xml", # speedy imageless RL model
     'CNN_PATH': "/home/matthewthomasbeck/Projects/Neuralink_System_Exploring/model/person-detection-0200.xml",  # person detection
+}
+
+PERSON_PROXIMITY_CONFIG = {
+    'WIDTH_RATIO_THRESHOLD': 0.90,  # retract when bbox width exceeds this fraction of frame width
+    'RETRACT_STEP_RAD': 0.05,       # radians to move each joint per frame while too close
 }
 
 
