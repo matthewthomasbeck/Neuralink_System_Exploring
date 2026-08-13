@@ -340,7 +340,7 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
     largest_box_width = 0
 
     if frame is None:
-        logging.debug("(inference.py): Frame is None.\n")
+        #logging.debug("(inference.py): Frame is None.\n")
         return False, 0, 0, 0
 
     try:
@@ -352,7 +352,7 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
 
         if compiled_model is not None and input_layer is not None and output_layer is not None:
 
-            logging.debug("(inference.py): Running inference...\n")
+            #logging.debug("(inference.py): Running inference...\n")
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             input_blob = cv2.resize(frame_rgb, (256, 256)).transpose(2, 0, 1)
             input_blob = np.expand_dims(input_blob, axis=0).astype(np.float32)
@@ -399,13 +399,13 @@ def run_person_detection(compiled_model, input_layer, output_layer, frame, run_i
                         2
                     )
 
-            logging.debug(
-                f"(inference.py): Frame result — "
-                f"person_detected={person_detected}, "
-                f"largest_box_width={largest_box_width}px, "
-                f"largest_box_area={largest_box_area}px², "
-                f"target_cx={target_cx}px.\n"
-            )
+            #logging.debug(
+            #    f"(inference.py): Frame result — "
+            #    f"person_detected={person_detected}, "
+            #    f"largest_box_width={largest_box_width}px, "
+            #    f"largest_box_area={largest_box_area}px², "
+            #    f"target_cx={target_cx}px.\n"
+            #)
             #cv2.imshow("video (inference)", frame)
             #cv2.waitKey(1)
 
