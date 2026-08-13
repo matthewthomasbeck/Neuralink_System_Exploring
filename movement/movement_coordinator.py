@@ -52,7 +52,7 @@ def retract_if_too_close(person_detected, has_frame=True):
 
     if person_detected:
         _set_arm_action('retract', "(movement_coordinator.py): Person detected — retracting servos.\n")
-        _nudge_joints_toward('FULL_BACK_ANGLE', config.PERSON_PROXIMITY_CONFIG['RETRACT_STEP_RAD'])
+        _nudge_joints_toward('FULL_FRONT_ANGLE', config.PERSON_PROXIMITY_CONFIG['RETRACT_STEP_RAD'])
         return
 
     _set_arm_action('neutral', "(movement_coordinator.py): Person not detected — returning servos to neutral.\n")
