@@ -47,31 +47,28 @@ def neutral_position(intensity=1):
 
 def retract_if_too_close(person_detected, box_width, frame_width):
 
-    if not person_detected or frame_width <= 0:
+    if frame_width <= 0:
         return
 
-    width_ratio = box_width / float(frame_width)
+    width_ratio = (box_width / float(frame_width)) if person_detected else 0.0
     threshold = config.PERSON_PROXIMITY_CONFIG['WIDTH_RATIO_THRESHOLD']
+    too_close = person_detected and width_ratio >= threshold
 
-    #logging.debug(
-    #    f"(movement_coordinator.py): proximity width_ratio={width_ratio:.3f} "
-    #    f"threshold={threshold:.3f} box_width={box_width}px frame_width={frame_width}px\n"
-    #)
-
-    if width_ratio >= threshold:
+    if too_close:
         _set_arm_action(
             'retract',
             f"(movement_coordinator.py): Person too close "
             f"({width_ratio:.1%} of frame width) — retracting servos.\n"
         )
         _nudge_joints_toward('FULL_BACK_ANGLE', config.PERSON_PROXIMITY_CONFIG['RETRACT_STEP_RAD'])
-    else:
-        _set_arm_action(
-            'extend',
-            f"(movement_coordinator.py): Person in view "
-            f"({width_ratio:.1%} of frame width) — extending servos.\n"
-        )
-        _nudge_joints_toward('FULL_FRONT_ANGLE', config.PERSON_PROXIMITY_CONFIG['EXTEND_STEP_RAD'])
+        return
+
+    _set_arm_action(
+        'neutral',
+        f"(movement_coordinator.py): Person not occupying {threshold:.0%} of frame "
+        f"(width_ratio={width_ratio:.1%}) — returning servos to neutral.\n"
+    )
+    _nudge_joints_toward('NEUTRAL_ANGLE', config.PERSON_PROXIMITY_CONFIG['NEUTRAL_STEP_RAD'])
 
 
 def _set_arm_action(action, message):
@@ -88,6 +85,8 @@ def _nudge_joints_toward(limit_key, step):
         servo_data = config.SERVO_CONFIG[joint_name]
         current = servo_data['CURRENT_ANGLE']
         limit = servo_data[limit_key]
+        if abs(current - limit) < 1e-6:
+            continue
         if current < limit:
             target = min(current + step, limit)
         else:
