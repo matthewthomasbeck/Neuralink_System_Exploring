@@ -56,10 +56,14 @@ CAMERA_CONFIG = {
     'APERTURE_RATIO': 1.8,
     'WIDTH': 640, # width of the camera image
     'HEIGHT': 480, # height of the camera image
-    'FRAME_RATE': 30, # frame rate of the camera in frames per second
+    'FRAME_RATE': 15, # picam fps
     'CROP_FRACTION': 0.5, # fraction of the image to crop from each side (0.0 to 1.0)
     'OUTPUT_WIDTH': 128, # width of the ML image
     'OUTPUT_HEIGHT': 48, # height of the image for ML inference
+    'LOGI_DEVICE': '/dev/video2', # C270 capture node (not /dev/video3 metadata)
+    'LOGI_WIDTH': 640,
+    'LOGI_HEIGHT': 480,
+    'LOGI_FRAME_RATE': 15,
 }
 
 
